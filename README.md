@@ -23,7 +23,7 @@ Monitors VPC IP allocation and exports metrics to CloudWatch. **CloudWatch alarm
 ### Basic Usage (with CloudWatch alarms)
 ```hcl
 module "ip_monitoring" {
-  source = "./modules/ip-monitoring"
+  source = "git::ssh://git@origin.www.code.dtf.lighting.com:7999/gso_ext/tf-module-ip-monitoring.git?ref=v1.0.2"
   
   name        = "my-vpc"
   vpc_id      = module.vpc.vpc_id
@@ -34,7 +34,7 @@ module "ip_monitoring" {
 ### Metrics Only (no CloudWatch alarms)
 ```hcl
 module "ip_monitoring" {
-  source = "./modules/ip-monitoring"
+  source = "git::ssh://git@origin.www.code.dtf.lighting.com:7999/gso_ext/tf-module-ip-monitoring.git?ref=v1.0.2"
   
   name                     = "my-vpc"
   vpc_id                   = module.vpc.vpc_id
@@ -45,7 +45,7 @@ module "ip_monitoring" {
 ### With Existing SNS Topic
 ```hcl
 module "ip_monitoring" {
-  source = "./modules/ip-monitoring"
+  source = "git::ssh://git@origin.www.code.dtf.lighting.com:7999/gso_ext/tf-module-ip-monitoring.git?ref=v1.0.2"
   
   name          = "my-vpc"
   vpc_id        = module.vpc.vpc_id

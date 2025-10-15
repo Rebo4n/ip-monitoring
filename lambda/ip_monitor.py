@@ -62,8 +62,84 @@ def handler(event, context):
         
         eni_count = len(enis_response['NetworkInterfaces'])
         
-        # Send metrics to CloudWatch (IP-focused only)
-        metrics = [
+        # Send metrics to CloudWatch (per-subnet and VPC-level)
+        metrics = []
+        
+        # Per-subnet metrics with SubnetId and VpcId dimensions
+        for subnet_detail in subnet_details:
+            subnet_id = subnet_detail['SubnetId']
+            
+            # Determine subnet type (private/public) based on route table
+            subnet_type = "private"  # default assumption
+            try:
+                # Check if subnet has route to internet gateway (indicates public subnet)
+                route_tables = ec2.describe_route_tables(
+                    Filters=[
+                        {'Name': 'association.subnet-id', 'Values': [subnet_id]}
+                    ]
+                )
+                
+                for rt in route_tables['RouteTables']:
+                    for route in rt['Routes']:
+                        if route.get('DestinationCidrBlock') == '0.0.0.0/0' and 'GatewayId' in route and route['GatewayId'].startswith('igw-'):
+                            subnet_type = "public"
+                            break
+                    if subnet_type == "public":
+                        break
+            except Exception:
+                # If we can't determine, assume private
+                pass
+            
+            # Add per-subnet metrics
+            subnet_metrics = [
+                {
+                    'MetricName': 'SubnetTotalIPs',
+                    'Value': subnet_detail['TotalIPs'],
+                    'Unit': 'Count',
+                    'Dimensions': [
+                        {'Name': 'VpcId', 'Value': vpc_id},
+                        {'Name': 'SubnetId', 'Value': subnet_id},
+                        {'Name': 'SubnetType', 'Value': subnet_type}
+                    ]
+                },
+                {
+                    'MetricName': 'SubnetUsedIPs',
+                    'Value': subnet_detail['UsedIPs'],
+                    'Unit': 'Count',
+                    'Dimensions': [
+                        {'Name': 'VpcId', 'Value': vpc_id},
+                        {'Name': 'SubnetId', 'Value': subnet_id},
+                        {'Name': 'SubnetType', 'Value': subnet_type}
+                    ]
+                },
+                {
+                    'MetricName': 'SubnetAvailableIPs',
+                    'Value': subnet_detail['AvailableIPs'],
+                    'Unit': 'Count',
+                    'Dimensions': [
+                        {'Name': 'VpcId', 'Value': vpc_id},
+                        {'Name': 'SubnetId', 'Value': subnet_id},
+                        {'Name': 'SubnetType', 'Value': subnet_type}
+                    ]
+                },
+                {
+                    'MetricName': 'SubnetIPUtilizationPercent',
+                    'Value': subnet_detail['UtilizationPercent'],
+                    'Unit': 'Percent',
+                    'Dimensions': [
+                        {'Name': 'VpcId', 'Value': vpc_id},
+                        {'Name': 'SubnetId', 'Value': subnet_id},
+                        {'Name': 'SubnetType', 'Value': subnet_type}
+                    ]
+                }
+            ]
+            metrics.extend(subnet_metrics)
+            
+            # Update subnet_detail with type for logging
+            subnet_detail['SubnetType'] = subnet_type
+        
+        # VPC-level aggregate metrics (keep existing for backward compatibility)
+        vpc_metrics = [
             {
                 'MetricName': 'TotalIPs',
                 'Value': total_ips,
@@ -95,6 +171,7 @@ def handler(event, context):
                 'Dimensions': [{'Name': 'VpcId', 'Value': vpc_id}]
             }
         ]
+        metrics.extend(vpc_metrics)
         
         # Send metrics to CloudWatch
         cloudwatch.put_metric_data(

@@ -105,6 +105,7 @@ resource "aws_iam_role_policy" "lambda_ip_monitor_policy" {
           "ec2:DescribeVpcs",
           "ec2:DescribeSubnets",
           "ec2:DescribeNetworkInterfaces",
+          "ec2:DescribeRouteTables",
           "cloudwatch:PutMetricData"
         ]
         Resource = "*"
