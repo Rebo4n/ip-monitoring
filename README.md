@@ -1,6 +1,13 @@
 # IP Monitoring Module
 
-Monitors VPC IP allocation and sends alerts when thresholds are exceeded. Metrics are exported to CloudWatch for external monitoring tools.
+Monitors VPC IP allocation and exports metrics to CloudWatch. **CloudWatch alarms handle all notifications** - the Lambda function only collects metrics.
+
+## Architecture
+
+- **Lambda Function**: Collects IP metrics and sends to CloudWatch (no alerting logic)
+- **CloudWatch Metrics**: Stores monitoring data for analysis and external tool integration
+- **CloudWatch Alarms**: Handle all threshold-based notifications to SNS topics
+- **SNS Topic**: Delivers notifications (email, Slack, etc.)
 
 ## Features
 
@@ -9,6 +16,7 @@ Monitors VPC IP allocation and sends alerts when thresholds are exceeded. Metric
 - Real-time VPC IP monitoring (total, used, available IPs)
 - ENI count tracking  
 - External monitoring tool compatible (Prometheus, Grafana, etc.)
+- Clean separation: Lambda collects metrics, CloudWatch alarms handle notifications
 
 ## Usage
 
@@ -19,6 +27,7 @@ module "ip_monitoring" {
   
   name        = "my-vpc"
   vpc_id      = module.vpc.vpc_id
+  alert_email = "ops-team@company.com"
 }
 ```
 
@@ -67,18 +76,24 @@ module "ip_monitoring" {
 
 ## Alerts
 
-- **Warning**: IP utilization > 80% OR available IPs < 50
-- **Critical**: IP utilization > 90% OR available IPs < 20
+CloudWatch alarms monitor the metrics and send notifications via SNS when thresholds are exceeded:
 
-**Note**: Alerts only work when `enable_cloudwatch_alarms = true` (default)
+- **Available IPs Low**: Available IPs < 50 (2 evaluation periods)
+- **IP Utilization Warning**: IP utilization > 80% (2 evaluation periods) 
+- **IP Utilization Critical**: IP utilization > 90% (1 evaluation period)
+
+**Note**: 
+- Alerts are handled by **CloudWatch alarms**, not the Lambda function
+- Alerts only work when `enable_cloudwatch_alarms = true` (default)
+- Lambda function focuses solely on metrics collection
 
 ## Usage Modes
 
 ### 1. **Full Monitoring** (default)
 - ✅ Lambda function collecting metrics
 - ✅ CloudWatch metrics
-- ✅ CloudWatch alarms
-- ✅ SNS notifications
+- ✅ CloudWatch alarms (handle notifications)
+- ✅ SNS notifications (triggered by alarms)
 
 ### 2. **Metrics Only**
 - ✅ Lambda function collecting metrics  
@@ -87,6 +102,8 @@ module "ip_monitoring" {
 - ❌ No SNS notifications
 
 Use "Metrics Only" mode when you want to collect the data but handle alerting through external tools (Prometheus, Grafana, etc.)
+
+**Key Design**: Lambda function never sends notifications directly - all alerting is handled by CloudWatch alarms for better separation of concerns.
 
 ## External Monitoring Integration
 

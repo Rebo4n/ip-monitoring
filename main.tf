@@ -1,3 +1,8 @@
+# Local value to determine which SNS topic ARN to use
+locals {
+  sns_topic_arn = var.sns_topic_arn != null ? var.sns_topic_arn : (var.enabled ? aws_sns_topic.ip_alerts[0].arn : null)
+}
+
 # IP Monitoring Module
 # Monitors VPC IP allocation and sends alerts when thresholds are exceeded
 
@@ -19,11 +24,6 @@ resource "aws_sns_topic_subscription" "ip_alerts_email" {
   endpoint  = var.alert_email
 }
 
-# Local value to determine which SNS topic ARN to use
-locals {
-  sns_topic_arn = var.sns_topic_arn != null ? var.sns_topic_arn : (var.enabled ? aws_sns_topic.ip_alerts[0].arn : null)
-}
-
 # Lambda function for detailed IP monitoring
 resource "aws_lambda_function" "ip_monitor" {
   count         = var.enabled ? 1 : 0
@@ -38,10 +38,7 @@ resource "aws_lambda_function" "ip_monitor" {
 
   environment {
     variables = {
-      VPC_ID             = var.vpc_id
-      SNS_TOPIC_ARN      = local.sns_topic_arn
-      WARNING_THRESHOLD  = tostring(var.warning_threshold)
-      CRITICAL_THRESHOLD = tostring(var.critical_threshold)
+      VPC_ID = var.vpc_id
     }
   }
 
@@ -108,7 +105,6 @@ resource "aws_iam_role_policy" "lambda_ip_monitor_policy" {
           "ec2:DescribeVpcs",
           "ec2:DescribeSubnets",
           "ec2:DescribeNetworkInterfaces",
-          "sns:Publish",
           "cloudwatch:PutMetricData"
         ]
         Resource = "*"
