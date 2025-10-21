@@ -14,6 +14,7 @@ variable "enabled" {
   default     = true
 }
 
+
 variable "enable_cloudwatch_alarms" {
   description = "Enable CloudWatch alarm rules for IP monitoring"
   type        = bool

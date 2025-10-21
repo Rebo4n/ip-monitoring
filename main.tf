@@ -11,6 +11,7 @@ resource "aws_sns_topic" "ip_alerts" {
   count = var.enabled && var.sns_topic_arn == null ? 1 : 0
   name  = "${var.name}-ip-allocation-alerts"
 
+
   tags = {
     Name = "${var.name}-ip-alerts"
   }

@@ -90,7 +90,7 @@ def handler(event, context):
                 # If we can't determine, assume private
                 pass
             
-            # Add per-subnet metrics
+            # Add per-subnet metric
             subnet_metrics = [
                 {
                     'MetricName': 'SubnetTotalIPs',

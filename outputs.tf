@@ -13,6 +13,7 @@ output "lambda_function_arn" {
   value       = var.enabled ? aws_lambda_function.ip_monitor[0].arn : null
 }
 
+
 output "cloudwatch_log_group" {
   description = "CloudWatch log group for IP monitoring"
   value       = var.enabled ? aws_cloudwatch_log_group.ip_monitor_logs[0].name : null
