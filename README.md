@@ -5,13 +5,16 @@ Monitors VPC IP allocation and exports metrics to CloudWatch. **CloudWatch alarm
 ## Architecture
 
 - **Lambda Function**: Collects IP metrics and sends to CloudWatch (no alerting logic)
+- **EventBridges Triggers**: 
+  - Schedule: runs every 24 hours
+  - ENI Events: runs on Create/Attach/Detach/DeleteNetworkInterface (via AWS API Call via CloudTrail)
 - **CloudWatch Metrics**: Stores monitoring data for analysis and external tool integration
 - **CloudWatch Alarms**: Handle all threshold-based notifications to SNS topics
 - **SNS Topic**: Delivers notifications (email, Slack, etc.)
 
 ## Features
 
-- **Always Created**: Lambda function, CloudWatch metrics, scheduled execution
+- **Always Created**: Lambda function, CloudWatch metrics, 24-hour schedule, ENI event trigger
 - **Optional**: CloudWatch alarms and SNS notifications (controlled by `enable_cloudwatch_alarms`)
 - Real-time VPC IP monitoring (total, used, available IPs)
 - ENI count tracking  
@@ -58,14 +61,14 @@ module "ip_monitoring" {
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
 | `name` | string | - | Name prefix for resources |
-| `vpc_id` | string | - | VPC ID to monitor |
+| `vpc_id` | string | - | VPC ID to monitor (used for default/manual runs) |
 | `enabled` | bool | `true` | Enable/disable module |
 | `enable_cloudwatch_alarms` | bool | `true` | Enable CloudWatch alarms |
 | `alert_email` | string | `null` | Email for alerts |
 | `sns_topic_arn` | string | `null` | Existing SNS topic ARN |
 | `warning_threshold` | number | `80.0` | Warning threshold % |
 | `critical_threshold` | number | `90.0` | Critical threshold % |
-| `monitoring_frequency` | string | `"rate(5 minutes)"` | Schedule expression |
+| `monitoring_frequency` | string | `"rate(24 hours)"` | Schedule expression |
 
 ## Metrics
 

@@ -48,5 +48,5 @@ variable "critical_threshold" {
 variable "monitoring_frequency" {
   description = "How often to run IP monitoring (CloudWatch Events schedule expression)"
   type        = string
-  default     = "rate(5 minutes)"
+  default     = "rate(24 hours)"
 }

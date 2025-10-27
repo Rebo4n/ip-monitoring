@@ -145,6 +145,45 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
   source_arn    = aws_cloudwatch_event_rule.ip_monitor_schedule[0].arn
 }
 
+# Additional CloudWatch Event Rule to trigger Lambda on ENI creation/deletion
+resource "aws_cloudwatch_event_rule" "ip_monitor_eni" {
+  count       = var.enabled ? 1 : 0
+  name        = "${var.name}-ip-monitor-eni-events"
+  description = "Trigger IP monitoring Lambda on ENI creation or deletion"
+
+  event_pattern = jsonencode({
+    source      = ["aws.ec2"],
+    "detail-type" = ["AWS API Call via CloudTrail"],
+    detail = {
+      # Only EC2 API calls
+      eventSource = ["ec2.amazonaws.com"],
+      # Fire on ENI API calls
+      eventName   = [
+        "CreateNetworkInterface",
+        "DeleteNetworkInterface"
+      ]
+    }
+  })
+}
+
+# CloudWatch Event Target for ENI events
+resource "aws_cloudwatch_event_target" "ip_monitor_target_eni" {
+  count     = var.enabled ? 1 : 0
+  rule      = aws_cloudwatch_event_rule.ip_monitor_eni[0].name
+  target_id = "TriggerLambdaFunction"
+  arn       = aws_lambda_function.ip_monitor[0].arn
+}
+
+# Lambda permission for EventBridge ENI events
+resource "aws_lambda_permission" "allow_eventbridge" {
+  count         = var.enabled ? 1 : 0
+  statement_id  = "AllowExecutionFromEventBridge"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.ip_monitor[0].function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.ip_monitor_eni[0].arn
+}
+
 # CloudWatch Log Group for Lambda logs
 resource "aws_cloudwatch_log_group" "ip_monitor_logs" {
   count             = var.enabled ? 1 : 0
